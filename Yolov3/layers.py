@@ -13,8 +13,6 @@ def fixed_padding(input_tensor, kernel_size, mode='CONSTANT'):
     :param mode: padding mode, default 'CONSTANT' which means padding zero value
     :return: output: A tensor after padding
     '''
-
-
     """
     
     pad_total = kernel_size - 1
