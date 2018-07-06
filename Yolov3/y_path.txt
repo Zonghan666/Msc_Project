@@ -1,0 +1,6 @@
+../test_data/annotations/dog10.xml
+../test_data/annotations/dog4.xml
+../test_data/annotations/dog6.xml
+../test_data/annotations/dog7.xml
+../test_data/annotations/dog3.xml
+../test_data/annotations/dog1.xml

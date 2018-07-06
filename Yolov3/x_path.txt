@@ -1,0 +1,6 @@
+../test_data/dogs/dog10.jpg
+../test_data/dogs/dog4.jpg
+../test_data/dogs/dog6.jpg
+../test_data/dogs/dog7.jpg
+../test_data/dogs/dog3.jpg
+../test_data/dogs/dog1.jpg
