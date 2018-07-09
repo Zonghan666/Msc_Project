@@ -2,6 +2,46 @@ import tensorflow as tf
 import numpy as np
 from PIL import ImageDraw
 import parameter
+from files_helper import annotation_reader
+
+
+def get_boxes_from_yolo(file, img_shape):
+    """
+
+    :param file: path of the label of yolo format
+    :param img_shape: shape of the images
+    :return: boxes, an array containing the cls, x0, y0, x1, y1 of the boxes
+    """
+
+    with open(file, 'r') as y:
+        label_path = y.read().splitlines()
+
+    boxes = []
+    cls = []
+
+    for path in label_path:
+        label = annotation_reader(path)
+        boxes.append(label[..., 1:])
+        cls.append(label[..., 0:1])
+
+    boxes = np.concatenate(boxes, axis=0)
+    cls = np.concatenate(cls, axis=0)
+
+    x = boxes[..., 0:1] * img_shape[0]
+    y = boxes[..., 1:2] * img_shape[1]
+    width = boxes[..., 2:3] * img_shape[0]
+    height = boxes[..., 3:4] * img_shape[1]
+
+    x0 = x - width / 2
+    y0 = y - height / 2
+    x1 = x + width / 2
+    y1 = y + height / 2
+
+    boxes = np.concatenate([x0, y0, x1, y1], axis=-1)
+
+    boxes = np.concatenate([cls, boxes], axis=-1)
+
+    return boxes
 
 
 def get_boxes(detections, n_classes, input_shape):
@@ -67,23 +107,63 @@ def get_iou(box1, box2):
     return IoU
 
 
+def average_iou(bboxes_true, bboxes_pred):
+    """
+    compute averge iou between ground true boxes and predicted boxes
+    :param bboxes_true: true label, output of get_boxes_from_yolo
+    :param bboxes_pred:  predicted label, output of non_max_suppression
+    :return: avg_iou
+    """
+
+    m_images = bboxes_true.shape[0]
+
+    avg_iou = 0
+
+    for i in range(m_images):
+        y_true = bboxes_true[i]
+        y_pred = bboxes_pred[i]
+        n_obj = y_true.shape[0]
+        obj_iou = 0
+
+        # iterate all true boxes in an image
+        for obj in y_true:
+            # box_true = y_true[1:5]
+            box_true = (obj[1], obj[2], obj[3], obj[4])
+            iou = 0
+
+            # iterate all predected box and find the best one
+            for _, boxes in y_pred.items():
+                for box_pred, _ in boxes:
+                    box_pred = (box_pred[0], box_pred[1], box_pred[2], box_pred[3])
+                    iou = max(iou, get_iou(box_true, box_pred))
+
+            obj_iou += iou
+
+        obj_iou /= n_obj
+        avg_iou += obj_iou
+
+    avg_iou /= m_images
+
+    return avg_iou
+
+
 def non_max_suppression(detection, confidence_threshold=0.5, iou_threshold=0.4):
     """
 
-    :param detection: numpy array of size [batch, n_grid, (5+n_classes)]
+    :param detection: numpy array of size [n_grid, (5+n_classes)]
     :param confidence_threshold: a value in range (0,1] that determines whether it is a valid bounding box
     :param iou_threshold: IoU threshold for the non_max_suppression
     :return: result: dict of format {class:[n_boxes:(boxes, score)]}
                      boxes:x,y,width, heigth
                      score:confidence score
     """
-    
 
     # iter each image in the batch
     
-    result = {}
+    output = []
     
     for i, img_pred in enumerate(detection):
+        result = {}
         # now the img_pred is of size [n_grid, 5+n_classes]
         mask = img_pred[:, 4] >= confidence_threshold
         img_pred = img_pred[mask]
@@ -120,8 +200,10 @@ def non_max_suppression(detection, confidence_threshold=0.5, iou_threshold=0.4):
                 iou_mask = ious < iou_threshold
                 cls_boxes = cls_boxes[iou_mask]
                 cls_scores = cls_scores[iou_mask]
+
+        output.append(result)
     
-    return result
+    return output
 
 
 def load_weight(var_list, weight_file, for_training=False):
@@ -330,6 +412,7 @@ def preprocess_true_labels(true_labels, input_shape, grid_shape, anchors, n_clas
 
     return y_true
 
+
 def preprocess_batch_labels(true_labels, input_shape, anchors, n_classes):
 
     input_shape = np.array(input_shape)
@@ -349,8 +432,8 @@ def preprocess_batch_labels(true_labels, input_shape, anchors, n_classes):
 
     y = np.concatenate([y0,y1,y2], axis=1).astype(float)
 
-
     return y
+
 
 
 
