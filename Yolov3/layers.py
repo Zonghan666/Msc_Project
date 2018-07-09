@@ -2,6 +2,7 @@ import tensorflow as tf
 import parameter
 from tensorflow.contrib.layers import xavier_initializer
 
+
 def fixed_padding(input_tensor, kernel_size, mode='CONSTANT'):
 
     """
@@ -50,7 +51,7 @@ def Conv2d(input_tensor, n_filter, kernel_size, strides, batch_norm=True, activa
                          filters=n_filter,
                          kernel_size=kernel_size,
                          strides=strides,
-                         padding=('same' if stride ==1 else 'valid'),
+                         padding=('same' if stride == 1 else 'valid'),
                          activation=None,
                          use_bias=use_bias,
                          kernel_initializer=xavier_initializer())
@@ -67,7 +68,7 @@ def Conv2d(input_tensor, n_filter, kernel_size, strides, batch_norm=True, activa
         
         x = tf.layers.batch_normalization(inputs=x, **batch_norm_params)
         
-    if activation==True:
+    if activation == True:
         x = tf.nn.leaky_relu(features=x, alpha= parameter._LEAKY_RELU)
         
     return x
@@ -227,7 +228,6 @@ def detection_layer(input_tensor, n_classes, anchors, img_size):
 
     predictions = tf.concat([box_centers, box_sizes, confidence, classes], axis=-1)
 
-    #
     grid = tf.reshape(x_y_offset, [-1, grid_size[0], grid_size[1], n_anchors, 2])
     box_xy = tf.reshape(box_centers, [-1, grid_size[0], grid_size[1], n_anchors, 2])
     box_wh = tf.reshape(box_sizes, [-1, grid_size[0], grid_size[1], n_anchors, 2])
