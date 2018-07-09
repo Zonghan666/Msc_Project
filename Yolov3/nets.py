@@ -1,17 +1,18 @@
-from layers import *
+from layers import Conv2d, Stack_Residual_block, yolo_block, upsampling, detection_layer
 import parameter
+import tensorflow as tf
 
 
 def darkNet53(input_tensor, classifier=False, n_classes=None):
     """
     darkNet:feature extractor of the yolov3 model or classifier
 
-    :param input_tensor: a tensor of size [batch, 416, 416, 3]
+    :param input_tensor: a tensor of size [batch, input_shape[0], input_shape[0], 1 if grayscale else 3]
     :param classifier:  if the model perform as a classifier or a feature detector
     :param n_classes: number of predicted classes if classifier == True
 
     :return: if classifier == True, return 1-D vector (n_classes
-             if classifier == False, return 3 feature map of size [13, 13, 512], [26, 26, 256], [52, 52, 128]
+             if classifier == False, return 3 feature maps
     """
 
     x = Conv2d(input_tensor=input_tensor, 
@@ -71,7 +72,7 @@ def darkNet53(input_tensor, classifier=False, n_classes=None):
                              n_Repeat=4)
     
     # classifier == False mean only feature extraction task is perfromed
-    if classifier == False:
+    if not classifier:
         return route0, route1, x
     
     else:
@@ -96,11 +97,11 @@ def darkNet53(input_tensor, classifier=False, n_classes=None):
 def yolo_v3(input_tensor, n_classes):
     """
 
-    :param input_tensor: a tensor of size [batch, 416, 416, 3]
+    :param input_tensor: a tensor of size [batch, input_shape[0], input_shape[0], 1 if grayscale else 3]
     :param n_classes:  number of predicted classes
 
     :return:  detections: a tensor of size [batch, n_grids, (5 + n_classes)]
-                          normally, n_grids = (13*13 + 26*26 + 52*52)*3 = 10647
+
               raw_output: a tuple of three tensors used to compute loss
                          (raw_output_0, raw_output_1, raw_output_2)
                          corresponding to three feature maps
@@ -136,9 +137,9 @@ def yolo_v3(input_tensor, n_classes):
         route, x= yolo_block(input_tensor=x, num_filter=256)
         
         detection_1, raw_output_1 = detection_layer(input_tensor=x,
-                                                  anchors= parameter._ANCHORS[3:6],
-                                                  img_size=img_size,
-                                                  n_classes=n_classes)
+                                                    anchors= parameter._ANCHORS[3:6],
+                                                    img_size=img_size,
+                                                    n_classes=n_classes)
         
         # last detection
         x = Conv2d(input_tensor=route, n_filter=128,
@@ -151,9 +152,9 @@ def yolo_v3(input_tensor, n_classes):
         _, x = yolo_block(input_tensor=x, num_filter=128)
         
         detection_2, raw_output_2 = detection_layer(input_tensor=x,
-                                                  anchors= parameter._ANCHORS[0:3],
-                                                  img_size=img_size,
-                                                  n_classes=n_classes)
+                                                    anchors= parameter._ANCHORS[0:3],
+                                                    img_size=img_size,
+                                                    n_classes=n_classes)
 
         detections = tf.concat([detection_0, detection_1, detection_2], axis=1)
         raw_output = (raw_output_0, raw_output_1, raw_output_2)
