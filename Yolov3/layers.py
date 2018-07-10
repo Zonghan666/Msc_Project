@@ -235,4 +235,3 @@ def detection_layer(input_tensor, n_classes, anchors, img_size):
     raw_data = (grid, raw_predictions, box_xy, box_wh)
 
     return predictions, raw_data
-
