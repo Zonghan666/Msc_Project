@@ -159,11 +159,3 @@ def get_loss(raw_output, y_true, input_shape):
     classes_loss = classes_loss_0 + classes_loss_1 + classes_loss_2
 
     return xy_loss, wh_loss, confidence_loss, classes_loss
-
-
-
-
-
-
-
-
