@@ -77,5 +77,3 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
         avg_iou = average_iou(y_true_boxes, y_pred_boxes)
 
         print('average iou: %.4f' % avg_iou)
-
-
