@@ -339,9 +339,9 @@ def draw_boxes(boxes, img, detection_size, greyscale=False):
             ratio = original_img_size / current_img_size
             box = list((box.reshape(2,2) * ratio).reshape(-1))
             
-            if greyscale == False:
+            if not greyscale:
                 draw.rectangle(xy=box, outline=color)
-            elif greyscale == True:
+            elif greyscale:
                 draw.rectangle(xy=box, outline=80000)
 
 
