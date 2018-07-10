@@ -81,6 +81,17 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
 
 
 def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=False, model_path=None, save_path='/checkpoint'):
+    """
+
+    :param x_train_file: training images txt that contains all paths of images
+    :param y_train_file: training labels txt
+    :param x_val_file: validation images txt
+    :param y_val_file: validation labels txt
+    :param grayscale: whether images are grayscale
+    :param model_path: path of the model checkpoint
+    :param save_path: specify path to save model
+    :return:
+    """
 
     batch_size = parameter._BATCH_SIZE
     input_shape = parameter._INPUT_SHAPE
@@ -112,7 +123,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
 
             train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
-    #generate validation set
+    # generate validation set
     val_batch = []
 
     with open(x_val_file) as x:
@@ -148,13 +159,13 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
             for batch in batches:
                 b_x, b_y = read_data_from_batch(batch, input_shape, anchors, n_classes)
 
-                _, batch_loss = sess.run([train_op, loss], feed_dict={tf_x:b_x, tf_y:b_y})
+                _, batch_loss = sess.run([train_op, loss], feed_dict={tf_x: b_x, tf_y: b_y})
 
                 train_loss += batch_loss
 
             train_loss /= n_batch
 
-            val_loss, y_val_pred_boxes = sess.run([loss, boxes], feed_dict={tf_x:x_val, tf_y:y_val})
+            val_loss, y_val_pred_boxes = sess.run([loss, boxes], feed_dict={tf_x: x_val, tf_y: y_val})
 
             y_val_pred_boxes = non_max_suppression(y_val_pred_boxes, confidence_threshold, iou_threshold)
 
@@ -167,22 +178,3 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
         saver.save(sess, save_path=save_path)
 
     print('End')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
