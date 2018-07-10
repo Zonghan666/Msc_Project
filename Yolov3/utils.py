@@ -433,17 +433,3 @@ def preprocess_batch_labels(true_labels, input_shape, anchors, n_classes):
     y = np.concatenate([y0,y1,y2], axis=1).astype(float)
 
     return y
-
-
-
-
-
-
-
-
-
-
-
-
-
-
