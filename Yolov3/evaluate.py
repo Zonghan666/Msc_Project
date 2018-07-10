@@ -60,7 +60,7 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
         saver = tf.train.Saver()
         saver.restore(sess, save_path=model_path)
 
-        detected_boxes = sess.run(boxes, feed_dict={tf_x:b_x})
+        detected_boxes = sess.run(boxes, feed_dict={tf_x: b_x})
 
         y_pred_boxes = non_max_suppression(detected_boxes, confidence_threshold, iou_threshohld)
 
