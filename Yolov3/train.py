@@ -78,7 +78,7 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
     return b_x, b_y
 
 
-def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=False, model_path=None, checkpoint='/checkpoint'):
+def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=False, model_path=None, save_path='/checkpoint'):
 
     batch_size = parameter._BATCH_SIZE
     input_shape = parameter._INPUT_SHAPE
@@ -90,20 +90,25 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
     confidence_threshold = parameter._CONFIDENCE_THRESHOLD
     iou_threshold = parameter._IOU_THRESHOLD
 
-    tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
-    tf_y = tf.placeholder(tf.float32, [None, y_dim, 5 + n_classes])
-
     # define the graph of the model
-    with tf.variable_scope('detector'):
-        detections, raw_output = yolo_v3(tf_x, n_classes)
 
-        boxes = get_boxes(detections, n_classes, input_shape)
+    graph = tf.Graph()
 
-        xy_loss, wh_loss, conf_loss, cls_loss = get_loss(raw_output, tf_y, input_shape)
+    with graph.as_default():
 
-        loss = xy_loss + wh_loss + conf_loss + cls_loss
+        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
+        tf_y = tf.placeholder(tf.float32, [None, y_dim, 5 + n_classes])
 
-        train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+        with tf.variable_scope('detector'):
+            detections, raw_output = yolo_v3(tf_x, n_classes)
+
+            boxes = get_boxes(detections, n_classes, input_shape)
+
+            xy_loss, wh_loss, conf_loss, cls_loss = get_loss(raw_output, tf_y, input_shape)
+
+            loss = xy_loss + wh_loss + conf_loss + cls_loss
+
+            train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
     #generate validation set
     val_batch = []
@@ -121,7 +126,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
 
     y_val_true_boxes = get_boxes_from_yolo(y_val_file, input_shape)
 
-    with tf.Session() as sess:
+    with tf.Session(graph=graph) as sess:
 
         saver = tf.train.Saver()
 
@@ -157,7 +162,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
 
         print('training finishes, saving model.....')
 
-    saver.save(sess, checkpoint)
+        saver.save(sess, save_path=save_path)
 
     print('End')
 
