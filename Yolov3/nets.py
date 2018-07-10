@@ -160,5 +160,3 @@ def yolo_v3(input_tensor, n_classes):
         raw_output = (raw_output_0, raw_output_1, raw_output_2)
 
         return detections, raw_output
-        
-
