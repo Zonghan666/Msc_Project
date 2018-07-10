@@ -67,13 +67,15 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
         img = np.expand_dims(img, axis=0)
         b_x.append(img)
 
-    for path in label_path:
-        label = annotation_reader(path)
-        label = preprocess_batch_labels(label, resize_size, anchors, n_classes)
-        b_y.append(label)
-
     b_x = np.concatenate(b_x, axis=0)
-    b_y = np.concatenate(b_y, axis=0)
+
+    if label_path:
+        for path in label_path:
+            label = annotation_reader(path)
+            label = preprocess_batch_labels(label, resize_size, anchors, n_classes)
+            b_y.append(label)
+
+        b_y = np.concatenate(b_y, axis=0)
 
     return b_x, b_y
 
