@@ -43,9 +43,7 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
                                     resize_size=input_shape)
 
     # define model in a graph
-    graph = tf.Graph()
-
-    with graph.as_default():
+    with tf.Graph().as_default():
 
         tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
 
@@ -54,23 +52,23 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
 
             boxes = get_boxes(detections, n_classes, input_shape)
 
-    with tf.Session(graph=graph) as sess:
+        with tf.Session() as sess:
 
-        # restore model
-        saver = tf.train.Saver()
-        saver.restore(sess, save_path=model_path)
+            # restore model
+            saver = tf.train.Saver()
+            saver.restore(sess, save_path=model_path)
 
-        detected_boxes = sess.run(boxes, feed_dict={tf_x: b_x})
+            detected_boxes = sess.run(boxes, feed_dict={tf_x: b_x})
 
-        y_pred_boxes = non_max_suppression(detected_boxes, confidence_threshold, iou_threshohld)
+            y_pred_boxes = non_max_suppression(detected_boxes, confidence_threshold, iou_threshohld)
 
-        m = b_x.shape[0]
+            m = b_x.shape[0]
 
-        for i in range(m):
-            img = Image.open(x_path[i])
-            draw_boxes(y_pred_boxes[i], img, input_shape, greyscale=grayscale)
-            img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
-            img.save(save_path+img_name+'.jpg', 'JPEG')
+    for i in range(m):
+        img = Image.open(x_path[i])
+        draw_boxes(y_pred_boxes[i], img, input_shape, greyscale=grayscale)
+        img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
+        img.save(save_path+img_name+'.jpg', 'JPEG')
 
     if label_file:
         y_true_boxes = get_boxes_from_yolo(label_file, input_shape)
