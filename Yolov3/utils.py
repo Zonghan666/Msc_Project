@@ -293,7 +293,7 @@ def load_weight(var_list, weight_file, for_training=False):
                 bias_weights = weight[ptr:ptr + n_params].reshape(shape)
                 ptr = ptr + n_params
 
-                if for_training == False:
+                if not for_training:
                     assign_op.append(tf.assign(ref=bias, value=bias_weights))
 
                 i = i + 1
@@ -305,25 +305,11 @@ def load_weight(var_list, weight_file, for_training=False):
                 var_weights = np.transpose(var_weights, [2, 3, 1, 0])
                 ptr += n_params
 
-                if for_training == False:
+                if not for_training:
                     assign_op.append(tf.assign(ref=var1, value=var_weights))
                 
                 # move on the var_list pointer by 1, beacuse we have loaded 1 variable
                 i = i + 1
-                
-            # finally we load the weight of the conv filter(kernel):
-            # size of kernel in tf model should be [kernel_size[0], kernel_size[1], in_channels, out_channels]
-            # weight value of the kernel stored in file is[out_channels * in_channels * kernel_size[0] * kernel_size[1]]
-            # which is 1-D vector
-            
-            # shape = var1.get_shape().as_list()
-            # n_params = np.prod(shape)
-            #
-            # var_weights = weight[ptr:ptr + n_params].reshape((shape[3], shape[2], shape[0], shape[1]))
-            # var_weights = np.transpose(var_weights, [2, 3, 1, 0])
-            # ptr += n_params
-            # assign_op.append(tf.assign(ref=var1, value=var_weights))
-            # i += 1
             
     return assign_op
 
