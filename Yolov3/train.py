@@ -7,8 +7,10 @@ from mpmath import math2
 import tensorflow as tf
 import parameter
 from nets import yolo_v3
-from utils import get_boxes, get_boxes_from_yolo, non_max_suppression, average_iou
+from utils import get_boxes, get_boxes_from_yolo, non_max_suppression, average_iou, load_weight
 from loss import get_loss
+import matplotlib.pyplot as plt
+
 
 
 def batch_generator(x_file, y_file, batch_size):
@@ -63,6 +65,8 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
         # deal with grey scale image
         if len(img.shape) == 2:
             img = np.expand_dims(img, axis=-1)
+            # convert grayscale to rgb
+            # img = np.tile(img, [1,1,3])
         
         img = np.expand_dims(img, axis=0)
         b_x.append(img)
@@ -103,25 +107,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
     confidence_threshold = parameter._CONFIDENCE_THRESHOLD
     iou_threshold = parameter._IOU_THRESHOLD
 
-    # define the graph of the model
-
-    graph = tf.Graph()
-
-    with graph.as_default():
-
-        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
-        tf_y = tf.placeholder(tf.float32, [None, y_dim, 5 + n_classes])
-
-        with tf.variable_scope('detector'):
-            detections, raw_output = yolo_v3(tf_x, n_classes)
-
-            boxes = get_boxes(detections, n_classes, input_shape)
-
-            xy_loss, wh_loss, conf_loss, cls_loss = get_loss(raw_output, tf_y, input_shape)
-
-            loss = xy_loss + wh_loss + conf_loss + cls_loss
-
-            train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+    yolo_weight = 'weights/yolov3.weights'
 
     # generate validation set
     val_batch = []
@@ -139,42 +125,70 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
 
     y_val_true_boxes = get_boxes_from_yolo(y_val_file, input_shape)
 
-    with tf.Session(graph=graph) as sess:
+    # define model
 
-        saver = tf.train.Saver()
+    with tf.Graph().as_default():
 
-        if model_path:
-            saver.restore(sess, save_path=model_path)
-        else:
-            sess.run(tf.global_variables_initializer())
+        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
+        tf_y = tf.placeholder(tf.float32, [None, y_dim, 5 + n_classes])
 
-        print('start training')
+        with tf.variable_scope('detector'):
+            detections, raw_output = yolo_v3(tf_x, n_classes)
 
-        for epoch in range(epochs):
+            boxes = get_boxes(detections, n_classes, input_shape)
 
-            batches = batch_generator(x_train_file, y_train_file, batch_size)
-            n_batch = len(batches)
-            train_loss = 0
+            xy_loss, wh_loss, conf_loss, cls_loss = get_loss(raw_output, tf_y, input_shape)
 
-            for batch in batches:
-                b_x, b_y = read_data_from_batch(batch, input_shape, anchors, n_classes)
+            loss = xy_loss + wh_loss + conf_loss + cls_loss
 
-                _, batch_loss = sess.run([train_op, loss], feed_dict={tf_x: b_x, tf_y: b_y})
+            train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
-                train_loss += batch_loss
+        with tf.Session() as sess:
 
-            train_loss /= n_batch
+            saver = tf.train.Saver()
 
-            val_loss, y_val_pred_boxes = sess.run([loss, boxes], feed_dict={tf_x: x_val, tf_y: y_val})
+            # initialize
+            if model_path:
+                saver.restore(sess, save_path=model_path)
 
-            y_val_pred_boxes = non_max_suppression(y_val_pred_boxes, confidence_threshold, iou_threshold)
+            else:
+                # use pre-train weight:
+                # load_ops = load_weight(var_list=tf.global_variables(scope='detector'), weight_file=yolo_weight, for_training=True)
+                # sess.run(load_ops)
+                # uninitialized_variables = [str(v, encoding='utf-8') for v in sess.run(tf.report_uninitialized_variables())]
+                # variables = [v for v in tf.global_variables() if v.name.split(':')[0] in uninitialized_variables]
+                # sess.run(tf.variables_initializer(variables))
 
-            avg_iou = average_iou(y_val_true_boxes, y_val_pred_boxes)
+                sess.run(tf.global_variables_initializer())
 
-            print('epoch:', epoch, '| training loss: %.4f' % train_loss, '|val loss: %.4f' % val_loss, '| val iou: %.4f' % avg_iou)
+            # start training
+            print('start training')
 
-        print('training finishes, saving model.....')
+            for epoch in range(epochs):
 
-        saver.save(sess, save_path=save_path)
+                batches = batch_generator(x_train_file, y_train_file, batch_size)
+                n_batch = len(batches)
+                train_loss = 0
 
-    print('End')
+                for batch in batches:
+                    b_x, b_y = read_data_from_batch(batch, input_shape, anchors, n_classes)
+
+                    _, batch_loss = sess.run([train_op, loss], feed_dict={tf_x: b_x, tf_y: b_y})
+
+                    train_loss += batch_loss
+
+                train_loss /= n_batch
+
+                val_loss, y_val_pred_boxes = sess.run([loss, boxes], feed_dict={tf_x: x_val, tf_y: y_val})
+
+                y_val_pred_boxes = non_max_suppression(y_val_pred_boxes, confidence_threshold, iou_threshold)
+
+                avg_iou = average_iou(y_val_true_boxes, y_val_pred_boxes)
+
+                print('epoch:', epoch, '| training loss: %.4f' % train_loss, '|val loss: %.4f' % val_loss, '| val iou: %.4f' % avg_iou)
+
+            print('training finishes, saving model.....')
+
+            saver.save(sess, save_path=save_path)
+
+        print('End')
