@@ -82,7 +82,7 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
     return b_x, b_y
 
 
-def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=False, model_path=None, save_path='/checkpoint'):
+def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=False, model_path=None, save_path='checkpoint/'):
     """
 
     :param x_train_file: training images txt that contains all paths of images
@@ -142,6 +142,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
 
         with tf.Session() as sess:
 
+            summary_writer = tf.summary.FileWriter('logs/')
             saver = tf.train.Saver()
 
             # initialize
@@ -181,6 +182,13 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
                 y_val_pred_boxes = non_max_suppression(y_val_pred_boxes, confidence_threshold, iou_threshold)
 
                 avg_iou = average_iou(y_val_true_boxes, y_val_pred_boxes)
+
+                # write summary to record training loss, validation loss and average iou
+                summary = tf.Summary(value=[tf.Summary.Value(tag='training_loss', simple_value=train_loss),
+                                            tf.Summary.Value(tag='validation_loss', simple_value=val_loss),
+                                            tf.Summary.Value(tag='avg_iou', simple_value=avg_iou)])
+
+                summary_writer.add_summary(summary, epoch)
 
                 print('epoch:', epoch, '| training loss: %.4f' % train_loss, '|val loss: %.4f' % val_loss, '| val iou: %.4f' % avg_iou)
 
