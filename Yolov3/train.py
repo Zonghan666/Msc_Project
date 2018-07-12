@@ -9,8 +9,6 @@ import parameter
 from nets import yolo_v3
 from utils import get_boxes, get_boxes_from_yolo, non_max_suppression, average_iou, load_weight
 from loss import get_loss
-import matplotlib.pyplot as plt
-
 
 
 def batch_generator(x_file, y_file, batch_size):
@@ -106,8 +104,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
     anchors = parameter._ANCHORS
     confidence_threshold = parameter._CONFIDENCE_THRESHOLD
     iou_threshold = parameter._IOU_THRESHOLD
-
-    yolo_weight = 'weights/yolov3.weights'
+    yolo_weight = parameter._YOLOV3_WEIGHTS
 
     # generate validation set
     val_batch = []
