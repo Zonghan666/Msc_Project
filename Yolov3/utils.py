@@ -314,21 +314,19 @@ def load_weight(var_list, weight_file, for_training=False):
     return assign_op
 
 
-def draw_boxes(boxes, img, detection_size, greyscale=False):
+def draw_boxes(boxes, img, detection_size):
     draw = ImageDraw.Draw(img)
 
     for cls, bboxes in boxes.items():
-        color = tuple(np.random.randint(0, 256, 3))
+        color = tuple(255, 255, 255)
+        #color = tuple(np.random.randint(0, 256, 3))
         for box, score in bboxes:
             original_img_size = np.array(img.size)
             current_img_size = np.array(detection_size)
             ratio = original_img_size / current_img_size
             box = list((box.reshape(2,2) * ratio).reshape(-1))
-            
-            if not greyscale:
-                draw.rectangle(xy=box, outline=color)
-            elif greyscale:
-                draw.rectangle(xy=box, outline=80000)
+
+            draw.rectangle(xy=box, outline=color)
 
 
 def preprocess_true_labels(true_labels, input_shape, grid_shape, anchors, n_classes):

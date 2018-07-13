@@ -110,7 +110,7 @@ def yolo_v3(input_tensor, n_classes):
     img_size = input_tensor.get_shape().as_list()[1:3]
     
     # normalize pixels value to range [0, 1]
-    input_tensor = input_tensor / 255
+    input_tensor = input_tensor / 255.
     
     with tf.variable_scope('darknet53'):
         route_0, route_1, x = darkNet53(input_tensor=input_tensor, classifier=False)

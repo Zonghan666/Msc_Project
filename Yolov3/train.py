@@ -64,7 +64,7 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
         if len(img.shape) == 2:
             img = np.expand_dims(img, axis=-1)
             # convert grayscale to rgb
-            # img = np.tile(img, [1,1,3])
+            img = np.tile(img, [1,1,3])
         
         img = np.expand_dims(img, axis=0)
         b_x.append(img)
@@ -82,14 +82,13 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
     return b_x, b_y
 
 
-def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=False, model_path=None, save_path='checkpoint/'):
+def train_model(x_train_file, y_train_file, x_val_file, y_val_file, model_path=None, save_path='checkpoint/'):
     """
 
     :param x_train_file: training images txt that contains all paths of images
     :param y_train_file: training labels txt
     :param x_val_file: validation images txt
     :param y_val_file: validation labels txt
-    :param grayscale: whether images are grayscale
     :param model_path: path of the model checkpoint
     :param save_path: specify path to save model
     :return:
@@ -126,7 +125,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, grayscale=Fa
 
     with tf.Graph().as_default():
 
-        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
+        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 3])
         tf_y = tf.placeholder(tf.float32, [None, y_dim, 5 + n_classes])
 
         with tf.variable_scope('detector'):
