@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from utils import non_max_suppression, get_boxes, draw_boxes, get_boxes_from_yolo, average_iou
 from train import read_data_from_batch
 import parameter
@@ -7,7 +8,7 @@ from PIL import Image
 import os
 
 
-def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_path='evaluate/'):
+def evaluate_model(img_file, model_path, label_file=None, save_path='evaluate/'):
     """
     predict images using the pretrained model
 
@@ -15,7 +16,6 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
     :param model_path: path to the tf checkpoint
     :param label_file: ground true label for the images, if not none, will also give the average iou. Otherwise, only
                        predicted images are given
-    :param grayscale: whether images are grayscle
     :param save_path:  path the save the image which have been drawn
     :return: None
     """
@@ -45,7 +45,7 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
     # define model in a graph
     with tf.Graph().as_default():
 
-        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 1 if grayscale else 3])
+        tf_x = tf.placeholder(tf.float32, [None, input_shape[0], input_shape[1], 3])
 
         with tf.variable_scope('detector'):
             detections, raw_output = yolo_v3(tf_x, n_classes)
@@ -66,7 +66,14 @@ def evaluate_model(img_file, model_path, label_file=None, grayscale=False, save_
 
     for i in range(m):
         img = Image.open(x_path[i])
-        draw_boxes(y_pred_boxes[i], img, input_shape, greyscale=grayscale)
+        # deal with grayscale
+        if len(img.size) == 2:
+            img = np.array(img)
+            img = np.expand_dims(img, axis=-1)
+            img = np.tile(img, [1,1,3])
+            img = Image.fromarray(img)
+
+        draw_boxes(y_pred_boxes[i], img, input_shape)
         img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
         img.save(save_path+img_name+'.jpg', 'JPEG')
 
