@@ -79,7 +79,7 @@ def upsampling(input_tensor, strides=2):
     # tf implementation, data_format:NHWC
     height, width = input_tensor.get_shape().as_list()[1:3]
     new_size = (height * strides, width * strides)
-    x = tf.image.resize_bilinear(images=input_tensor, size=new_size)
+    x = tf.image.resize_nearest_neighbor(images=input_tensor, size=new_size)
     
     return x
 
