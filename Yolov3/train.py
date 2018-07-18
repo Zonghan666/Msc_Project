@@ -57,7 +57,7 @@ def read_data_from_batch(batch, resize_size, anchors, n_classes):
 
     for path in img_path:
         img = Image.open(path)
-        img = img.resize(size=resize_size)
+        img = img.resize(size=resize_size, resample=Image.ANTIALIAS)
         img = np.array(img)
         
         # deal with grey scale image
@@ -104,6 +104,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, model_path=N
     confidence_threshold = parameter._CONFIDENCE_THRESHOLD
     iou_threshold = parameter._IOU_THRESHOLD
     yolo_weight = parameter._YOLOV3_WEIGHTS
+    logs_path = parameter._LOGS_PATH
 
     # generate validation set
     val_batch = []
@@ -141,7 +142,7 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, model_path=N
 
         with tf.Session() as sess:
 
-            summary_writer = tf.summary.FileWriter('logs/')
+            # summary_writer = tf.summary.FileWriter(logs_path)
             saver = tf.train.Saver()
 
             # initialize
@@ -166,30 +167,45 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, model_path=N
                 batches = batch_generator(x_train_file, y_train_file, batch_size)
                 n_batch = len(batches)
                 train_loss = 0
+                xy_loss_train = 0
+                wh_loss_train = 0
+                conf_loss_train = 0
 
                 for batch in batches:
                     b_x, b_y = read_data_from_batch(batch, input_shape, anchors, n_classes)
 
-                    _, batch_loss = sess.run([train_op, loss], feed_dict={tf_x: b_x, tf_y: b_y})
+                    _, batch_loss, xy_loss_batch, wh_loss_batch, conf_loss_batch = sess.run([train_op, loss, xy_loss, wh_loss, conf_loss],
+                                                                                             feed_dict={tf_x: b_x, tf_y: b_y})
 
                     train_loss += batch_loss
+                    xy_loss_train += xy_loss_batch
+                    wh_loss_train += wh_loss_batch
+                    conf_loss_train += conf_loss_batch
 
                 train_loss /= n_batch
+                xy_loss_train /= n_batch
+                wh_loss_train /= n_batch
+                conf_loss_train /= n_batch
 
-                val_loss, y_val_pred_boxes = sess.run([loss, boxes], feed_dict={tf_x: x_val, tf_y: y_val})
+                val_loss, xy_loss_val, wh_loss_val, conf_loss_val, y_val_pred_boxes = sess.run([loss, xy_loss, wh_loss, conf_loss, boxes], feed_dict={tf_x: x_val, tf_y: y_val})
 
                 y_val_pred_boxes = non_max_suppression(y_val_pred_boxes, confidence_threshold, iou_threshold)
 
                 avg_iou = average_iou(y_val_true_boxes, y_val_pred_boxes)
 
                 # write summary to record training loss, validation loss and average iou
-                summary = tf.Summary(value=[tf.Summary.Value(tag='training_loss', simple_value=train_loss),
-                                            tf.Summary.Value(tag='validation_loss', simple_value=val_loss),
-                                            tf.Summary.Value(tag='avg_iou', simple_value=avg_iou)])
+                # summary = tf.Summary(value=[tf.Summary.Value(tag='training_loss', simple_value=train_loss),
+                #                             tf.Summary.Value(tag='validation_loss', simple_value=val_loss),
+                #                             tf.Summary.Value(tag='avg_iou', simple_value=avg_iou)])
+                #
+                # summary_writer.add_summary(summary)
 
-                summary_writer.add_summary(summary, epoch)
+                print('epoch:', epoch)
+                print('training loss:', 'total loss: %.4f' % train_loss, '| xy loss: %.4f' % xy_loss_train, '| wh loss: %.4f' % wh_loss_train, '|confidence loss: %.4f' % conf_loss_train)
+                print('validation loss:', 'total loss: %.4f' % val_loss, '| xy loss: %.4f' % xy_loss_val, '| wh loss: %.4f' % wh_loss_val, '|confidence loss: %.4f' % conf_loss_val, '| avg iou: %.4f' % avg_iou)
+                print('----------------------------------------')
 
-                print('epoch:', epoch, '| training loss: %.4f' % train_loss, '|val loss: %.4f' % val_loss, '| val iou: %.4f' % avg_iou)
+                # print('epoch:', epoch, '| training loss: %.4f' % train_loss, '|val loss: %.4f' % val_loss, '| val iou: %.4f' % avg_iou)
 
             print('training finishes, saving model.....')
 
