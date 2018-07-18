@@ -98,7 +98,7 @@ def get_iou(box1, box2):
     overlapped_y0 = max(b1_y0, b2_y0)
     overlapped_y1 = min(b1_y1, b2_y1)
     
-    overlapped_area = (overlapped_x1 - overlapped_x0) * (overlapped_y1 - overlapped_y0)
+    overlapped_area = max((overlapped_x1 - overlapped_x0), 0) * max((overlapped_y1 - overlapped_y0), 0)
     b1_area = (b1_x1 - b1_x0) * (b1_y1 - b1_y0)
     b2_area = (b2_x1 - b2_x0) * (b2_y1 - b2_y0)
     
@@ -318,15 +318,15 @@ def draw_boxes(boxes, img, detection_size):
     draw = ImageDraw.Draw(img)
 
     for cls, bboxes in boxes.items():
-        color = tuple(255, 255, 255)
-        #color = tuple(np.random.randint(0, 256, 3))
+        # color = tuple(255, 255, 255)
+        # color = tuple(np.random.randint(0, 256, 3))
         for box, score in bboxes:
             original_img_size = np.array(img.size)
             current_img_size = np.array(detection_size)
             ratio = original_img_size / current_img_size
             box = list((box.reshape(2,2) * ratio).reshape(-1))
 
-            draw.rectangle(xy=box, outline=color)
+            draw.rectangle(xy=box, outline=255)
 
 
 def preprocess_true_labels(true_labels, input_shape, grid_shape, anchors, n_classes):
