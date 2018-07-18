@@ -1,6 +1,7 @@
 import tensorflow as tf
 import parameter
 from tensorflow.contrib.layers import xavier_initializer
+from tensorflow.keras.initializers import he_normal, he_uniform
 
 
 def fixed_padding(input_tensor, kernel_size, mode='CONSTANT'):
@@ -63,7 +64,7 @@ def Conv2d(input_tensor, n_filter, kernel_size, strides, batch_norm=True, activa
             'epsilon' : parameter._BATCH_NORM_EPSILON,
             'scale' : True,
             'fused' : None,
-            'trainable' : False
+            'trainable' : True
         }
         
         x = tf.layers.batch_normalization(inputs=x, **batch_norm_params)
