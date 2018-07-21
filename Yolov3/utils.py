@@ -169,8 +169,11 @@ def non_max_suppression(detection, confidence_threshold=0.5, iou_threshold=0.4):
         img_pred = img_pred[mask]
         
         bbox_attrs = img_pred[:, 0:5]
-        classes = img_pred[:, 5:]
-        classes = np.argmax(classes, axis=-1)
+        classes_prob = img_pred[:, 5:]
+        classes = np.argmax(classes_prob, axis=-1)
+        probability = np.expand_dims(np.max(classes_prob, axis=1), axis=-1)
+        print(probability.shape)
+        bbox_attrs = np.concatenate([bbox_attrs, probability], axis=1)
         
         unique_class = list(set(classes.reshape(-1)))
         
@@ -185,21 +188,25 @@ def non_max_suppression(detection, confidence_threshold=0.5, iou_threshold=0.4):
             cls_boxes = cls_boxes[score_mark]
             
             # split the position information and the score of the boxes
-            cls_scores = cls_boxes[:, -1]
-            cls_boxes = cls_boxes[:, :-1]
+            cls_prob = cls_boxes[:, -1]
+            cls_scores = cls_boxes[:, -2]
+            cls_boxes = cls_boxes[:, :-2]
             
             while len(cls_boxes) > 0:
                 box = cls_boxes[0]
                 score = cls_scores[0]
+                prob = cls_prob[0]
                 if not cls in result:
                     result[cls] = []
-                result[cls].append((box, score))
+                result[cls].append((box, score, prob))
                 cls_boxes = cls_boxes[1:]
                 cls_scores = cls_scores[1:]
+                cls_prob = cls_prob[1:]
                 ious = np.array([get_iou(box, x) for x in cls_boxes])
                 iou_mask = ious < iou_threshold
                 cls_boxes = cls_boxes[iou_mask]
                 cls_scores = cls_scores[iou_mask]
+                cls_prob = cls_prob[iou_mask]
 
         output.append(result)
     
@@ -320,13 +327,14 @@ def draw_boxes(boxes, img, detection_size):
     for cls, bboxes in boxes.items():
         # color = tuple(255, 255, 255)
         # color = tuple(np.random.randint(0, 256, 3))
-        for box, score in bboxes:
+        for box, score, prob in bboxes:
             original_img_size = np.array(img.size)
             current_img_size = np.array(detection_size)
             ratio = original_img_size / current_img_size
             box = list((box.reshape(2,2) * ratio).reshape(-1))
 
-            draw.rectangle(xy=box, outline=255)
+            draw.rectangle(xy=box, outline=(200, 0, 0))
+            draw.text(box[:2], '{} {:.2f}%'.format(parameter._INVERSED_CLASSES[cls], prob * 100), fill=(133, 0, 0))
 
 
 def preprocess_true_labels(true_labels, input_shape, grid_shape, anchors, n_classes):

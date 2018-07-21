@@ -4,7 +4,7 @@ from utils import non_max_suppression, get_boxes, draw_boxes, get_boxes_from_yol
 from train import read_data_from_batch
 import parameter
 from nets import yolo_v3
-from PIL import Image
+from PIL import Image, ImageDraw
 import os
 
 
@@ -64,21 +64,42 @@ def evaluate_model(img_file, model_path, label_file=None, save_path='evaluate/')
 
             m = b_x.shape[0]
 
-    for i in range(m):
-        img = Image.open(x_path[i])
-        # deal with grayscale
-        if len(img.size) == 2:
-            img = np.array(img)
-            img = np.expand_dims(img, axis=-1)
-            img = np.tile(img, [1,1,3])
-            img = Image.fromarray(img)
+    if not label_file:
+        for i in range(m):
+            img = Image.open(x_path[i])
+            # deal with grayscale
+            if len(img.size) == 2:
+                img = np.array(img)
+                img = np.expand_dims(img, axis=-1)
+                img = np.tile(img, [1,1,3])
+                img = Image.fromarray(img)
 
-        draw_boxes(y_pred_boxes[i], img, input_shape)
-        img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
-        img.save(save_path+img_name+'.jpg', 'JPEG')
+            draw_boxes(y_pred_boxes[i], img, input_shape)
+            img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
+            img.save(save_path+img_name+'.jpg', 'JPEG')
 
     if label_file:
         y_true_boxes = get_boxes_from_yolo(label_file, input_shape)
         avg_iou = average_iou(y_true_boxes, y_pred_boxes)
+
+        for i in range(m):
+            img = Image.open(x_path[i])
+            # deal with grayscale
+            if len(img.size) == 2:
+                img = np.array(img)
+                img = np.expand_dims(img_axis=-1)
+                img = np.tile(img, [1,1,3])
+                img = Image.fromarray(img)
+
+            box = y_true_boxes[i]
+            original_img_size = np.array(img.size)
+            current_img_size = np.array(input_shape)
+            ratio = original_img_size / current_img_size
+            box = list((box.reshape(2,2) * ratio).reshape(-1))
+            draw = ImageDraw.Draw(img)
+            draw.rectangle(xy=box, outline=(0,0, 200))
+            draw_boxes(y_pred_boxes[i], img, input_shape)
+            img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
+            img.save(save_path+img_name+'.jpg', 'JPEG')
 
         print('average iou: %.4f' % avg_iou)
