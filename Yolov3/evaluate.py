@@ -81,17 +81,18 @@ def evaluate_model(img_file, model_path, label_file=None, save_path='evaluate/')
     if label_file:
         y_true_boxes = get_boxes_from_yolo(label_file, input_shape)
         avg_iou = average_iou(y_true_boxes, y_pred_boxes)
+        print(y_true_boxes.shape)
 
         for i in range(m):
             img = Image.open(x_path[i])
             # deal with grayscale
             if len(img.size) == 2:
                 img = np.array(img)
-                img = np.expand_dims(img_axis=-1)
+                img = np.expand_dims(img, axis=-1)
                 img = np.tile(img, [1,1,3])
                 img = Image.fromarray(img)
 
-            box = y_true_boxes[i]
+            box = y_true_boxes[i, :, 1:]
             original_img_size = np.array(img.size)
             current_img_size = np.array(input_shape)
             ratio = original_img_size / current_img_size

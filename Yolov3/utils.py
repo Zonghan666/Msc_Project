@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from PIL import ImageDraw
+from PIL import ImageDraw, ImageFont
 import parameter
 from files_helper import annotation_reader
 
@@ -133,7 +133,7 @@ def average_iou(bboxes_true, bboxes_pred):
 
             # iterate all predected box and find the best one
             for _, boxes in y_pred.items():
-                for box_pred, _ in boxes:
+                for box_pred, _, _ in boxes:
                     box_pred = (box_pred[0], box_pred[1], box_pred[2], box_pred[3])
                     iou = max(iou, get_iou(box_true, box_pred))
 
@@ -172,7 +172,6 @@ def non_max_suppression(detection, confidence_threshold=0.5, iou_threshold=0.4):
         classes_prob = img_pred[:, 5:]
         classes = np.argmax(classes_prob, axis=-1)
         probability = np.expand_dims(np.max(classes_prob, axis=1), axis=-1)
-        print(probability.shape)
         bbox_attrs = np.concatenate([bbox_attrs, probability], axis=1)
         
         unique_class = list(set(classes.reshape(-1)))
@@ -323,6 +322,7 @@ def load_weight(var_list, weight_file, for_training=False):
 
 def draw_boxes(boxes, img, detection_size):
     draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype("arial.ttf", 30)
 
     for cls, bboxes in boxes.items():
         # color = tuple(255, 255, 255)
@@ -334,7 +334,7 @@ def draw_boxes(boxes, img, detection_size):
             box = list((box.reshape(2,2) * ratio).reshape(-1))
 
             draw.rectangle(xy=box, outline=(200, 0, 0))
-            draw.text(box[:2], '{} {:.2f}%'.format(parameter._INVERSED_CLASSES[cls], prob * 100), fill=(133, 0, 0))
+            draw.text(box[:2], '{} {:.2f}%'.format(parameter._INVERSED_CLASSES[cls], prob * 100), fill=(133, 0, 0), font=font)
 
 
 def preprocess_true_labels(true_labels, input_shape, grid_shape, anchors, n_classes):
