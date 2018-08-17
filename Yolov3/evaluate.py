@@ -81,7 +81,6 @@ def evaluate_model(img_file, model_path, label_file=None, save_path='evaluate/')
     if label_file:
         y_true_boxes = get_boxes_from_yolo(label_file, input_shape)
         avg_iou = average_iou(y_true_boxes, y_pred_boxes)
-        print(y_true_boxes.shape)
 
         for i in range(m):
             img = Image.open(x_path[i])
@@ -92,13 +91,17 @@ def evaluate_model(img_file, model_path, label_file=None, save_path='evaluate/')
                 img = np.tile(img, [1,1,3])
                 img = Image.fromarray(img)
 
-            box = y_true_boxes[i, :, 1:]
-            original_img_size = np.array(img.size)
-            current_img_size = np.array(input_shape)
-            ratio = original_img_size / current_img_size
-            box = list((box.reshape(2,2) * ratio).reshape(-1))
-            draw = ImageDraw.Draw(img)
-            draw.rectangle(xy=box, outline=(0,0, 200))
+            for obj in y_true_boxes[i]:
+                cls = obj[0]
+                if parameter._CLASSES['nipple'] == cls:
+                    box = obj[1:]
+                    original_img_size = np.array(img.size)
+                    current_img_size = np.array(input_shape)
+                    ratio = original_img_size / current_img_size
+                    box = list((box.reshape(2,2) * ratio).reshape(-1))
+                    draw = ImageDraw.Draw(img)
+                    draw.rectangle(xy=box, outline=(0,0, 200))
+
             draw_boxes(y_pred_boxes[i], img, input_shape)
             img_name = os.path.splitext(x_path[i].split('/')[-1])[0]
             img.save(save_path+img_name+'.jpg', 'JPEG')
