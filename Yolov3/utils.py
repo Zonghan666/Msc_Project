@@ -17,29 +17,26 @@ def get_boxes_from_yolo(file, img_shape):
         label_path = y.read().splitlines()
 
     boxes = []
-    cls = []
 
     for path in label_path:
         label = annotation_reader(path)
-        boxes.append(label[..., 1:])
-        cls.append(label[..., 0:1])
+        box = label[0, ..., 1:]
+        cls = label[0, ..., 0:1]
 
-    boxes = np.concatenate(boxes, axis=0)
-    cls = np.concatenate(cls, axis=0)
+        x = box[..., 0:1] * img_shape[0]
+        y = box[..., 1:2] * img_shape[1]
+        width = box[..., 2:3] * img_shape[0]
+        height = box[..., 3:4] * img_shape[1]
 
-    x = boxes[..., 0:1] * img_shape[0]
-    y = boxes[..., 1:2] * img_shape[1]
-    width = boxes[..., 2:3] * img_shape[0]
-    height = boxes[..., 3:4] * img_shape[1]
+        x0 = x - width / 2
+        y0 = y - height / 2
+        x1 = x + width / 2
+        y1 = y + height / 2
 
-    x0 = x - width / 2
-    y0 = y - height / 2
-    x1 = x + width / 2
-    y1 = y + height / 2
+        box = np.concatenate([x0, y0, x1, y1], axis=-1)
+        box = np.concatenate([cls, box], axis=-1)
 
-    boxes = np.concatenate([x0, y0, x1, y1], axis=-1)
-
-    boxes = np.concatenate([cls, boxes], axis=-1)
+        boxes.append(box)
 
     return boxes
 
@@ -115,7 +112,7 @@ def average_iou(bboxes_true, bboxes_pred):
     :return: avg_iou
     """
 
-    m_images = bboxes_true.shape[0]
+    m_images = len(bboxes_true)
 
     avg_iou = 0
 
@@ -327,14 +324,15 @@ def draw_boxes(boxes, img, detection_size):
     for cls, bboxes in boxes.items():
         # color = tuple(255, 255, 255)
         # color = tuple(np.random.randint(0, 256, 3))
-        for box, score, prob in bboxes:
-            original_img_size = np.array(img.size)
-            current_img_size = np.array(detection_size)
-            ratio = original_img_size / current_img_size
-            box = list((box.reshape(2,2) * ratio).reshape(-1))
+        if cls == parameter._CLASSES['nipple']:
+            for box, score, prob in bboxes:
+                original_img_size = np.array(img.size)
+                current_img_size = np.array(detection_size)
+                ratio = original_img_size / current_img_size
+                box = list((box.reshape(2,2) * ratio).reshape(-1))
 
-            draw.rectangle(xy=box, outline=(200, 0, 0))
-            draw.text(box[:2], '{} {:.2f}%'.format(parameter._INVERSED_CLASSES[cls], prob * 100), fill=(133, 0, 0), font=font)
+                draw.rectangle(xy=box, outline=(200, 0, 0))
+                draw.text(box[:2], '{} {:.2f}%'.format(parameter._INVERSED_CLASSES[cls], prob * 100), fill=(133, 0, 0), font=font)
 
 
 def preprocess_true_labels(true_labels, input_shape, grid_shape, anchors, n_classes):
