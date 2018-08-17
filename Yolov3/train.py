@@ -170,24 +170,35 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, model_path=N
                 xy_loss_train = 0
                 wh_loss_train = 0
                 conf_loss_train = 0
+                cls_loss_train = 0
 
                 for batch in batches:
                     b_x, b_y = read_data_from_batch(batch, input_shape, anchors, n_classes)
 
-                    _, batch_loss, xy_loss_batch, wh_loss_batch, conf_loss_batch = sess.run([train_op, loss, xy_loss, wh_loss, conf_loss],
+                    _, batch_loss, xy_loss_batch, wh_loss_batch, conf_loss_batch, cls_loss_batch = sess.run([train_op,
+                                                                                                             loss,
+                                                                                                             xy_loss,
+                                                                                                             wh_loss,
+                                                                                                             conf_loss,
+                                                                                                             cls_loss],
                                                                                              feed_dict={tf_x: b_x, tf_y: b_y})
 
                     train_loss += batch_loss
                     xy_loss_train += xy_loss_batch
                     wh_loss_train += wh_loss_batch
                     conf_loss_train += conf_loss_batch
+                    cls_loss_train += cls_loss_batch
 
                 train_loss /= n_batch
                 xy_loss_train /= n_batch
                 wh_loss_train /= n_batch
                 conf_loss_train /= n_batch
+                cls_loss_train /= n_batch
 
-                val_loss, xy_loss_val, wh_loss_val, conf_loss_val, y_val_pred_boxes = sess.run([loss, xy_loss, wh_loss, conf_loss, boxes], feed_dict={tf_x: x_val, tf_y: y_val})
+                val_loss, xy_loss_val, wh_loss_val, conf_loss_val, cls_loss_val, y_val_pred_boxes = sess.run([loss, xy_loss,
+                                                                                                              wh_loss, conf_loss,
+                                                                                                              cls_loss, boxes],
+                                                                                                              feed_dict={tf_x: x_val, tf_y: y_val})
 
                 y_val_pred_boxes = non_max_suppression(y_val_pred_boxes, confidence_threshold, iou_threshold)
 
@@ -201,8 +212,12 @@ def train_model(x_train_file, y_train_file, x_val_file, y_val_file, model_path=N
                 # summary_writer.add_summary(summary)
 
                 print('epoch:', epoch)
-                print('training loss:', 'total loss: %.4f' % train_loss, '| xy loss: %.4f' % xy_loss_train, '| wh loss: %.4f' % wh_loss_train, '|confidence loss: %.4f' % conf_loss_train)
-                print('validation loss:', 'total loss: %.4f' % val_loss, '| xy loss: %.4f' % xy_loss_val, '| wh loss: %.4f' % wh_loss_val, '|confidence loss: %.4f' % conf_loss_val, '| avg iou: %.4f' % avg_iou)
+                print('training loss:', 'total loss: %.4f' % train_loss, '| xy loss: %.4f' % xy_loss_train,\
+                      '| wh loss: %.4f' % wh_loss_train, '|confidence loss: %.4f' % conf_loss_train,\
+                      '| class loss: %.4f' % cls_loss_train)
+                print('validation loss:', 'total loss: %.4f' % val_loss, '| xy loss: %.4f' % xy_loss_val,\
+                      '| wh loss: %.4f' % wh_loss_val, '|confidence loss: %.4f' % conf_loss_val,\
+                      'class loss: %.4f' % cls_loss_val, '| avg iou: %.4f' % avg_iou)
                 print('----------------------------------------')
 
                 # print('epoch:', epoch, '| training loss: %.4f' % train_loss, '|val loss: %.4f' % val_loss, '| val iou: %.4f' % avg_iou)
