@@ -1,3 +1,5 @@
+import numpy as np
+
 # convolution layer
 _BATCH_NORM_DECAY = 0.9
 _BATCH_NORM_EPSILON = 1e-05
@@ -14,17 +16,18 @@ _LEAKY_RELU = 0.1
 # _ANCHORS = [(23., 25.), (29., 26.), (26., 31.), (26., 39.), (34., 30.), (30., 35.), (40., 34.), (35., 40.), (46., 43.)]
 
 # Optimam(736, 736)
-_ANCHORS = [(29., 29.), (27., 37.), (36., 33.), (32., 40.), (37., 43.), (44., 38.), (41., 50.), (51., 46.), (56., 55.)]
+# _ANCHORS = [(29., 29.), (27., 37.), (36., 33.), (32., 40.), (37., 43.), (44., 38.), (41., 50.), (51., 46.), (56., 55.)]
 
+_ANCHORS = np.loadtxt('anchor_box.txt')
 
 # commom
 _EPLISION = 1e-08
 
 # classes
-_CLASSES = {'nipple': 0, 'non-nipple': 1}
+# _CLASSES = {'nipple': 0, 'non-nipple': 1}
 
 # classes
-#_CLASSES = {'dog': 16}
+_CLASSES = {'dog': 16}
 
 # inversed classes
 _INVERSED_CLASSES = {v: k for k, v in _CLASSES.items()}
@@ -50,4 +53,4 @@ _IOU_THRESHOLD = 0.1
 _YOLOV3_WEIGHTS = 'weights/yolov3.weights'
 
 # logs_path
-_LOGS_PATH = 'logs/416/100%'
+_LOGS_PATH = ''
