@@ -5,6 +5,8 @@ from train import train_model
 from evaluate import evaluate_model
 import tensorflow as tf
 
+# specify the path to these four txt files containing the path to training images, validation images, training labels
+# and validation labels.
 img_train = ''
 img_val = ''
 label_train = ''
